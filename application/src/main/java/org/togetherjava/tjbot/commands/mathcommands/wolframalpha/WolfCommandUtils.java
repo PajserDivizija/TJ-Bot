@@ -94,4 +94,11 @@ public final class WolfCommandUtils {
         WolframAlphaCommand.logger.info("Error Message \n {}", String.join("\n", output));
         return String.join("\n", output);
     }
+
+    public static String handleError(QueryResult result) {
+        WolframAlphaCommand.logger.error(
+                "Error getting response from Wolfram Alpha API \nError Code {}\n ErrorMessage{}",
+                result.getErrorTag().getCode(), result.getErrorTag().getMessage());
+        return "An error occurred while getting response from the Wolfram|Alpha API. Check the URI";
+    }
 }

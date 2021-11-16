@@ -46,6 +46,10 @@ final class QueryResult {
     private RelatedExamples relatedExamples;
     @JsonProperty("pod")
     private List<Pod> pods;
+    @JsonProperty("error")
+    private Error errorTag;
+
+
 
     public boolean isSuccess() {
         return success;
@@ -212,5 +216,15 @@ final class QueryResult {
     @SuppressWarnings("unused")
     public void setRelatedExamples(RelatedExamples relatedExamples) {
         this.relatedExamples = relatedExamples;
+    }
+
+    @SuppressWarnings("unused")
+    public Error getErrorTag() {
+        return errorTag;
+    }
+
+    @SuppressWarnings("unused")
+    public void setErrorTag(Error errorTag) {
+        this.errorTag = errorTag;
     }
 }
