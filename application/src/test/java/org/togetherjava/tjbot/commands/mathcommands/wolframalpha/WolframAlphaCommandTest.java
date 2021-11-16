@@ -3,7 +3,6 @@ package org.togetherjava.tjbot.commands.mathcommands.wolframalpha;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.togetherjava.tjbot.commands.utils.WolfCommandUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -26,7 +25,7 @@ final class WolframAlphaCommandTest {
         BufferedImage image2 = new BufferedImage(100, 100, 6);
         image1.getGraphics().setColor(Color.RED);
         image2.getGraphics().setColor(Color.YELLOW);
-        assertFalse(WolfCommandUtils.compareImages(image1, image2));
+        assertFalse(WolframAlphaCommandUtils.compareImages(image1, image2));
     }
 
     @Test
@@ -67,10 +66,10 @@ final class WolframAlphaCommandTest {
         ImageIO.write(mergedImage, "png", new File(
                 "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\test\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\manuallyMergedImg.png"));
         BufferedImage mergedByMethod =
-                WolfCommandUtils.combineImages(List.of(image1, image2, image3), 100, 300);
+                WolframAlphaCommandUtils.combineImages(List.of(image1, image2, image3), 100, 300);
         ImageIO.write(mergedByMethod, "png", new File(
                 "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\test\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\methodMergedimage.png"));
-        assertTrue(WolfCommandUtils.compareImages(mergedImage, mergedByMethod));
+        assertTrue(WolframAlphaCommandUtils.compareImages(mergedImage, mergedByMethod));
     }
 }
 

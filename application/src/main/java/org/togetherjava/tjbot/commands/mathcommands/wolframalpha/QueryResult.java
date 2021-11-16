@@ -49,8 +49,6 @@ final class QueryResult {
     @JsonProperty("error")
     private Error errorTag;
 
-
-
     public boolean isSuccess() {
         return success;
     }

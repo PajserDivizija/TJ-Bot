@@ -30,9 +30,12 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.*;
-
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.lang.Error;
 
 public final class WolframAlphaCommand extends SlashCommandAdapter {
     public static final Logger logger = LoggerFactory.getLogger(WolframAlphaCommand.class);
@@ -68,7 +71,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
     private final HttpClient client = HttpClient.newHttpClient();
 
     public WolframAlphaCommand() {
-        super("wolf", "Renders mathematical queries using WolframAlpha",
+        super("wolfram-alpha", "Renders mathematical queries using WolframAlpha",
                 SlashCommandVisibility.GUILD);
         getData().addOption(OptionType.STRING, QUERY_OPTION, "the query to send to WolframAlpha",
                 true);
@@ -114,9 +117,9 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
          */
         String content;
         if (result.isError()) {
-            content = "";
+            content = WolframAlphaCommandUtils.handleError(result);
         } else if (!result.isSuccess()) {
-            content = WolfCommandUtils.handleMisunderstoodQuery(result);
+            content = WolframAlphaCommandUtils.handleMisunderstoodQuery(result);
         } else {
             content = "Computed in:" + result.getTiming() + "\n"
                     + (result.getNumberOfTimedOutPods() == 0 ? ""
@@ -266,7 +269,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
                 SubPod subPod = subPods.get(j);
                 logger.info("sub pod number {}", ++j);
-                WolfImage image = subPod.getImage();
+                WolframAlphaImage image = subPod.getImage();
                 try {
                     String name = image.getTitle();
                     String source = image.getSource();
@@ -313,17 +316,17 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
                         BufferedImage combinedImage =
-                                WolfCommandUtils.combineImages(images, maxWidth, resultHeight);
+                                WolframAlphaCommandUtils.combineImages(images, maxWidth, resultHeight);
                         images.clear();
                         ImageIO.write(combinedImage, "png", Path
                             .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
                                 .formatted(++filesAttached))
                             .toFile());
                         if (message == null) {
-                            message = channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage),
+                            message = channel.sendFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         } else {
-                            message.addFile(WolfCommandUtils.imageToBytes(combinedImage),
+                            message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         }
                         /*
@@ -344,7 +347,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                     } else if (pod == pods.get(pods.size() - 1)
                             && subPod == subPods.get(subPods.size() - 1)) {
                         logger.info("The last image");
-                        BufferedImage combinedImage = WolfCommandUtils.combineImages(images,
+                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
                                 Math.max(maxWidth, image.getWidth()),
                                 resultHeight + image.getHeight());
                         images.clear();
@@ -353,10 +356,10 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                                 .formatted(++filesAttached))
                             .toFile());
                         if (message == null) {
-                            message = channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage),
+                            message = channel.sendFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         } else {
-                            message.addFile(WolfCommandUtils.imageToBytes(combinedImage),
+                            message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         }
                         /*
@@ -424,7 +427,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
                 SubPod subPod = subPods.get(j);
                 logger.info("sub pod number {}", ++j);
-                WolfImage image = subPod.getImage();
+                WolframAlphaImage image = subPod.getImage();
                 try {
                     String name = image.getTitle();
                     String source = image.getSource();
@@ -472,13 +475,13 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
                         BufferedImage combinedImage =
-                                WolfCommandUtils.combineImages(images, maxWidth, resultHeight);
+                                WolframAlphaCommandUtils.combineImages(images, maxWidth, resultHeight);
                         images.clear();
                         ImageIO.write(combinedImage, "png", Path
                             .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
                                 .formatted(++filesAttached))
                             .toFile());
-                        action = action.addFile(WolfCommandUtils.imageToBytes(combinedImage),
+                        action = action.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
                         /*
                          * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
@@ -498,7 +501,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                     } else if (pod == pods.get(pods.size() - 1)
                             && subPod == subPods.get(subPods.size() - 1) && images.size() != 0) {
                         logger.info("The last image");
-                        BufferedImage combinedImage = WolfCommandUtils.combineImages(images,
+                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
                                 Math.max(maxWidth, image.getWidth()),
                                 resultHeight + image.getHeight());
                         images.clear();
@@ -507,7 +510,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                                 .formatted(++filesAttached))
                             .toFile());
 
-                        action = action.addFile(WolfCommandUtils.imageToBytes(combinedImage),
+                        action = action.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
 
                         /*

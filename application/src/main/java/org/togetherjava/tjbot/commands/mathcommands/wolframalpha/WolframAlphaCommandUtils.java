@@ -11,9 +11,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public final class WolfCommandUtils {
+public final class WolframAlphaCommandUtils {
 
-    private WolfCommandUtils() {
+    private WolframAlphaCommandUtils() {
 
     }
 

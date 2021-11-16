@@ -13,7 +13,7 @@ final class SubPod {
     private String title;
 
     @JsonProperty("img")
-    private WolfImage image;
+    private WolframAlphaImage image;
     @JsonProperty("plaintext")
     private PlainText plainText;
 
@@ -27,11 +27,11 @@ final class SubPod {
         this.title = title;
     }
 
-    public WolfImage getImage() {
+    public WolframAlphaImage getImage() {
         return image;
     }
 
-    public void setImage(WolfImage image) {
+    public void setImage(WolframAlphaImage image) {
         this.image = image;
     }
 

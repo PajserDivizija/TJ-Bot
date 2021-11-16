@@ -7,7 +7,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 @JsonRootName("img")
 @JsonIgnoreProperties(ignoreUnknown = true)
-final class WolfImage {
+final class WolframAlphaImage {
     @JacksonXmlProperty(isAttribute = true, localName = "src")
     private String source;
     @JacksonXmlProperty(isAttribute = true)
