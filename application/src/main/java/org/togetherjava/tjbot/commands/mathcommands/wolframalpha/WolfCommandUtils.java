@@ -73,7 +73,7 @@ public final class WolfCommandUtils {
                     "Your query is regarding The topic \"%s\" which might be supported by Wolfram Alpha in the future"
                         .formatted(futureTopic.getTopic()));
         }
-        LanguageMsg languageMsg = result.getLanguageMsg();
+        LanguageMessage languageMsg = result.getLanguageMessage();
         if (languageMsg != null) {
             output.add(languageMsg.getEnglish() + "\n" + languageMsg.getOther());
         }

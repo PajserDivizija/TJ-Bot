@@ -8,7 +8,6 @@ import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.requests.RestAction;
 import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageUpdateAction;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.togetherjava.tjbot.commands.SlashCommandAdapter;
 import org.togetherjava.tjbot.commands.SlashCommandVisibility;
-import org.togetherjava.tjbot.commands.utils.WolfCommandUtils;
 import org.togetherjava.tjbot.config.Config;
 
 import javax.imageio.ImageIO;
@@ -114,10 +112,17 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
          * Optional<List<MessageAction>> optAction = createResult(result, event);
          * optAction.ifPresent(list -> list.forEach(MessageAction::queue));
          */
-        String content = "Computed in:" + result.getTiming() + "\n"
-                + (result.getNumberOfTimedOutPods() == 0 ? ""
-                        : "Some pods have timed out. Visit the URI")
-                + "\n" + createResult$1(result, event, action, uriEmbed);
+        String content;
+        if (result.isError()) {
+            content = "";
+        } else if (!result.isSuccess()) {
+            content = WolfCommandUtils.handleMisunderstoodQuery(result);
+        } else {
+            content = "Computed in:" + result.getTiming() + "\n"
+                    + (result.getNumberOfTimedOutPods() == 0 ? ""
+                            : "Some pods have timed out. Visit the URI")
+                    + "\n" + createResult$1(result, event, action, uriEmbed);
+        }
         action.setContent(content).queue();
     }
 
@@ -140,7 +145,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
              * .editOriginal("Connection to WolframAlpha was interrupted") .queue();
              */
             action.setContent("Connection to WolframAlpha was interrupted").queue();
-            logger.info("Connection to WolframAlpha was interrupted", e);
+            logger.warn("Connection to WolframAlpha was interrupted", e);
             Thread.currentThread().interrupt();
             return Optional.empty();
         }
@@ -182,16 +187,16 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             return Optional.empty();
         }
 
-        if (!result.isSuccess()) {
-            /*
-             * event.getHook() .setEphemeral(true)
-             * .editOriginal("Could not successfully receive the result") .queue();
-             */
-            action.setContent("Could not successfully receive the result").queue();
-            // TODO The exact error details have a different POJO structure,
-            // POJOs have to be added to get those details. See the Wolfram doc.
-            return Optional.empty();
-        }
+        /*
+         * if (!result.isSuccess()) {
+         *//*
+            * event.getHook() .setEphemeral(true)
+            * .editOriginal("Could not successfully receive the result") .queue();
+            *//*
+               * action.setContent("Could not successfully receive the result").queue(); // TODO The
+               * exact error details have a different POJO structure, // POJOs have to be added to
+               * get those details. See the Wolfram doc. return Optional.empty(); }
+               */
         return Optional.of(result);
     }
 
@@ -491,7 +496,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                             .setImage("attachment://result%d.png".formatted(filesAttached))
                             .build());
                     } else if (pod == pods.get(pods.size() - 1)
-                            && subPod == subPods.get(subPods.size() - 1)) {
+                            && subPod == subPods.get(subPods.size() - 1) && images.size() != 0) {
                         logger.info("The last image");
                         BufferedImage combinedImage = WolfCommandUtils.combineImages(images,
                                 Math.max(maxWidth, image.getWidth()),
