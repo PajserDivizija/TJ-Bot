@@ -27,11 +27,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 public final class WolframAlphaCommand extends SlashCommandAdapter {
     public static final Logger logger = LoggerFactory.getLogger(WolframAlphaCommand.class);
@@ -39,6 +36,10 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
      * Starting part of a regular wolframalpha query link.
      */
     public static final String USER_ENDPOINT = "https://www.wolframalpha.com/input";
+    /**
+     * Maximum Embeds that can be sent in a {@link WebhookMessageUpdateAction}
+     */
+    public static final int MAX_EMBEDS = 10;
     private static final int HTTP_STATUS_CODE_OK = 200;
     private static final XmlMapper XML = new XmlMapper();
     private static final String QUERY_OPTION = "query";
@@ -46,8 +47,8 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
      * WolframAlpha API endpoint to connect to.
      *
      * @see <a href=
-     *      "https://products.wolframalpha.com/docs/WolframAlpha-API-Reference.pdf">WolframAlpha API
-     *      Reference</a>.
+     * "https://products.wolframalpha.com/docs/WolframAlpha-API-Reference.pdf">WolframAlpha API
+     * Reference</a>.
      */
     private static final String API_ENDPOINT = "http://api.wolframalpha.com/v2/query";
     private static final int MAX_IMAGE_HEIGHT_PX = 400;
@@ -58,16 +59,12 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
     /**
      * WolframAlpha Font
      */
-    private static final Font WOLFRAM_ALPHA_FONT = new Font("Times", Font.PLAIN, 15)
-        .deriveFont(Map.of(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON));
+    private static final Font WOLFRAM_ALPHA_FONT = new Font("Times", Font.PLAIN, 15).deriveFont(
+            Map.of(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON));
     /**
      * Height of the unscaled text displayed in Font {@link #WOLFRAM_ALPHA_FONT}
      */
     private static final int TEXT_HEIGHT = 30;
-    /**
-     * Maximum Embeds that can be sent in a {@link WebhookMessageUpdateAction}
-     */
-    public static final int MAX_EMBEDS = 10;
     private final HttpClient client = HttpClient.newHttpClient();
 
     public WolframAlphaCommand() {
@@ -77,8 +74,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                 true);
     }
 
-    @Override
-    public void onSlashCommand(@NotNull SlashCommandEvent event) {
+    @Override public void onSlashCommand(@NotNull SlashCommandEvent event) {
 
         // The processing takes some time
         event.deferReply().queue();
@@ -87,20 +83,20 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
         URI userUri = UrlBuilder.fromString(USER_ENDPOINT).addParameter("i", query).toUri();
 
-        MessageEmbed uriEmbed = new EmbedBuilder()
-            .setTitle(query + "- Wolfram|Alpha", userUri.toString())
-            .setDescription(
-                    "Wolfram|Alpha brings expert-level knowledge and capabilities to the broadest possible range of people-spanning all professions and education levels.")
-            .build();
+        MessageEmbed uriEmbed =
+                new EmbedBuilder().setTitle(query + "- Wolfram|Alpha", userUri.toString())
+                        .setDescription(
+                                "Wolfram|Alpha brings expert-level knowledge and capabilities to the broadest possible range of people-spanning all professions and education levels.")
+                        .build();
 
         WebhookMessageUpdateAction<Message> action =
                 event.getHook().editOriginal("").setEmbeds(uriEmbed);
 
         URI apiUri = UrlBuilder.fromString(API_ENDPOINT)
-            .addParameter("appid", Config.getInstance().getWolframAlphaAppId())
-            .addParameter("format", "image,plaintext")
-            .addParameter("input", query)
-            .toUri();
+                .addParameter("appid", Config.getInstance().getWolframAlphaAppId())
+                .addParameter("format", "image,plaintext")
+                .addParameter("input", query)
+                .toUri();
         HttpRequest request = sendQuery(apiUri);
         Optional<HttpResponse<String>> optResponse = getResponse(request, action);
         if (optResponse.isEmpty())
@@ -111,21 +107,22 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             return;
         QueryResult result = optResult.get();
         action = action.setContent("Computed in:" + result.getTiming());
-        String content;
-        if (result.isError()) {
-            content = WolframAlphaCommandUtils.handleError(result);
-        } else if (!result.isSuccess()) {
-            content = WolframAlphaCommandUtils.handleMisunderstoodQuery(result);
-        } else {
-            content = "Computed in:" + result.getTiming() + "\n"
-                    + (result.getNumberOfTimedOutPods() == 0 ? ""
-                            : "Some pods have timed out. Visit the URI")
-                    + "\n" + handleSuccessfulResult(result, action, uriEmbed);
-        }
-        action.setContent(content).queue();
+        action.setContent(switch (ResultStatus.getResultStatus(result)) {
+
+            case ERROR -> WolframAlphaCommandUtils.handleError(result);
+
+            case NOT_SUCCESS -> WolframAlphaCommandUtils.handleMisunderstoodQuery(result);
+
+            case SUCCESS -> "Computed in:" + result.getTiming() + "\n" + (
+                    result.getNumberOfTimedOutPods() == 0 ?
+                            "" :
+                            "Some pods have timed out. Visit the URI") + "\n"
+                    + handleSuccessfulResult(result, action, uriEmbed);
+        }).queue();
     }
 
-    private @NotNull Optional<HttpResponse<String>> getResponse(@NotNull HttpRequest request, @NotNull WebhookMessageUpdateAction<Message> action) {
+    private @NotNull Optional<HttpResponse<String>> getResponse(@NotNull HttpRequest request,
+            @NotNull WebhookMessageUpdateAction<Message> action) {
         HttpResponse<String> response;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -154,11 +151,12 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         return HttpRequest.newBuilder(uri).GET().build();
     }
 
-    private @NotNull Optional<QueryResult> parseQuery(@NotNull HttpResponse<String> response, @NotNull WebhookMessageUpdateAction<Message> action) {
+    private @NotNull Optional<QueryResult> parseQuery(@NotNull HttpResponse<String> response,
+            @NotNull WebhookMessageUpdateAction<Message> action) {
         QueryResult result;
         try {
-            Files.writeString(Path
-                .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\responsebody.xml"),
+            Files.writeString(
+                    Path.of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\responsebody.xml"),
                     response.body());
             result = XML.readValue(response.body(), QueryResult.class);
 
@@ -169,8 +167,9 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         }
         return Optional.of(result);
     }
-    private @NotNull String handleSuccessfulResult(@NotNull QueryResult result, WebhookMessageUpdateAction<Message> action,
-            MessageEmbed embed) {
+
+    private @NotNull String handleSuccessfulResult(@NotNull QueryResult result,
+            WebhookMessageUpdateAction<Message> action, MessageEmbed embed) {
 
         int filesAttached = 0;
         int resultHeight = 0;
@@ -187,9 +186,9 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                     String source = image.getSource();
                     String header = pod.getTitle();
                     boolean firstSubPod = subPod == subPods.get(0);
-                    int width =
-                            (firstSubPod ? Math.max(getWidth(header), image.getWidth()) : image.getWidth())
-                                    + 10;
+                    int width = (firstSubPod ?
+                            Math.max(getWidth(header), image.getWidth()) :
+                            image.getWidth()) + 10;
                     int height = image.getHeight();
                     if (firstSubPod)
                         height += TEXT_HEIGHT;
@@ -213,31 +212,28 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
-                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
-                                resultHeight);
+                        BufferedImage combinedImage =
+                                WolframAlphaCommandUtils.combineImages(images, resultHeight);
                         images.clear();
-                        ImageIO.write(combinedImage, "png", Path
-                            .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-                                .formatted(++filesAttached))
-                            .toFile());
-                        action = action.addFile(
-                                WolframAlphaCommandUtils.imageToBytes(combinedImage),
-                                "result%d.png".formatted(++filesAttached));
+                        ImageIO.write(combinedImage, "png",
+                                Path.of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png".formatted(
+                                        ++filesAttached)).toFile());
+                        action =
+                                action.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                                        "result%d.png".formatted(++filesAttached));
                         resultHeight = 0;
-                        embeds.add(embedBuilder
-                            .setImage("attachment://result%d.png".formatted(filesAttached))
-                            .build());
-                    } else if (pod == pods.get(pods.size() - 1)
-                            && subPod == subPods.get(subPods.size() - 1) && images.size() != 0) {
+                        embeds.add(embedBuilder.setImage(
+                                "attachment://result%d.png".formatted(filesAttached)).build());
+                    } else if (pod == pods.get(pods.size() - 1) && subPod == subPods.get(
+                            subPods.size() - 1) && images.size() != 0) {
                         logger.info("The last image");
                         images.clear();
-                        action = action.addFile(
-                                WolframAlphaCommandUtils.imageToBytes(WolframAlphaCommandUtils.combineImages(images,
-                                        resultHeight + image.getHeight())),
+                        action = action.addFile(WolframAlphaCommandUtils.imageToBytes(
+                                        WolframAlphaCommandUtils.combineImages(images,
+                                                resultHeight + image.getHeight())),
                                 "result%d.png".formatted(++filesAttached));
-                        embeds.add(embedBuilder
-                            .setImage("attachment://result%d.png".formatted(filesAttached))
-                            .build());
+                        embeds.add(embedBuilder.setImage(
+                                "attachment://result%d.png".formatted(filesAttached)).build());
                     }
                     resultHeight += readImage.getHeight();
                     images.add(readImage);
