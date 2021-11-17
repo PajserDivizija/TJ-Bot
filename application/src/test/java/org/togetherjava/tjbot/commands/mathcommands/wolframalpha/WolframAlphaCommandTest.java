@@ -66,7 +66,7 @@ final class WolframAlphaCommandTest {
         ImageIO.write(mergedImage, "png", new File(
                 "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\test\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\manuallyMergedImg.png"));
         BufferedImage mergedByMethod =
-                WolframAlphaCommandUtils.combineImages(List.of(image1, image2, image3), 100, 300);
+                WolframAlphaCommandUtils.combineImages(List.of(image1, image2, image3), 300);
         ImageIO.write(mergedByMethod, "png", new File(
                 "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\test\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\methodMergedimage.png"));
         assertTrue(WolframAlphaCommandUtils.compareImages(mergedImage, mergedByMethod));

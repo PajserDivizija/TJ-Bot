@@ -23,8 +23,9 @@ public final class WolframAlphaCommandUtils {
         return baos.toByteArray();
     }
 
-    public static BufferedImage combineImages(List<BufferedImage> images, int width, int height) {
-        width = images.stream().mapToInt(BufferedImage::getWidth).max().orElse(Integer.MAX_VALUE);
+    public static BufferedImage combineImages(List<BufferedImage> images, int height) {
+        int width =
+                images.stream().mapToInt(BufferedImage::getWidth).max().orElse(Integer.MAX_VALUE);
         height = images.stream().mapToInt(BufferedImage::getHeight).sum();
         WolframAlphaCommand.logger.info("In Method: Width {} Height {}", width, height);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);

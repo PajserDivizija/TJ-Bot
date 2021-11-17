@@ -4,11 +4,9 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.mikael.urlbuilder.UrlBuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.events.interaction.SlashCommandEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
-import net.dv8tion.jda.api.requests.restaction.MessageAction;
 import net.dv8tion.jda.api.requests.restaction.WebhookMessageUpdateAction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -21,7 +19,6 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.font.TextAttribute;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -35,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.lang.Error;
 
 public final class WolframAlphaCommand extends SlashCommandAdapter {
     public static final Logger logger = LoggerFactory.getLogger(WolframAlphaCommand.class);
@@ -68,6 +64,10 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
      * Height of the unscaled text displayed in Font {@link #WOLFRAM_ALPHA_FONT}
      */
     private static final int TEXT_HEIGHT = 30;
+    /**
+     * Maximum Embeds that can be sent in a {@link WebhookMessageUpdateAction}
+     */
+    public static final int MAX_EMBEDS = 10;
     private final HttpClient client = HttpClient.newHttpClient();
 
     public WolframAlphaCommand() {
@@ -102,19 +102,15 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             .addParameter("input", query)
             .toUri();
         HttpRequest request = sendQuery(apiUri);
-        Optional<HttpResponse<String>> optResponse = getResponse(event, request, action);
+        Optional<HttpResponse<String>> optResponse = getResponse(request, action);
         if (optResponse.isEmpty())
             return;
         HttpResponse<String> response = optResponse.get();
-        Optional<QueryResult> optResult = parseQuery(response, event, action);
+        Optional<QueryResult> optResult = parseQuery(response, action);
         if (optResult.isEmpty())
             return;
         QueryResult result = optResult.get();
         action = action.setContent("Computed in:" + result.getTiming());
-        /*
-         * Optional<List<MessageAction>> optAction = createResult(result, event);
-         * optAction.ifPresent(list -> list.forEach(MessageAction::queue));
-         */
         String content;
         if (result.isError()) {
             content = WolframAlphaCommandUtils.handleError(result);
@@ -124,29 +120,20 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             content = "Computed in:" + result.getTiming() + "\n"
                     + (result.getNumberOfTimedOutPods() == 0 ? ""
                             : "Some pods have timed out. Visit the URI")
-                    + "\n" + createResult$1(result, event, action, uriEmbed);
+                    + "\n" + handleSuccessfulResult(result, action, uriEmbed);
         }
         action.setContent(content).queue();
     }
 
-    private @NotNull Optional<HttpResponse<String>> getResponse(@NotNull SlashCommandEvent event,
-            @NotNull HttpRequest request, @NotNull WebhookMessageUpdateAction<Message> action) {
+    private @NotNull Optional<HttpResponse<String>> getResponse(@NotNull HttpRequest request, @NotNull WebhookMessageUpdateAction<Message> action) {
         HttpResponse<String> response;
         try {
             response = client.send(request, HttpResponse.BodyHandlers.ofString());
         } catch (IOException e) {
-            /*
-             * event.getHook() .setEphemeral(true)
-             * .editOriginal("Unable to get a response from WolframAlpha API") .queue();
-             */
             action.setContent("Unable to get a response from WolframAlpha API").queue();
             logger.warn("Could not get the response from the server", e);
             return Optional.empty();
         } catch (InterruptedException e) {
-            /*
-             * event.getHook() .setEphemeral(true)
-             * .editOriginal("Connection to WolframAlpha was interrupted") .queue();
-             */
             action.setContent("Connection to WolframAlpha was interrupted").queue();
             logger.warn("Connection to WolframAlpha was interrupted", e);
             Thread.currentThread().interrupt();
@@ -154,10 +141,6 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         }
 
         if (response.statusCode() != HTTP_STATUS_CODE_OK) {
-            /*
-             * event.getHook() .setEphemeral(true)
-             * .editOriginal("The response' status code was incorrect") .queue();
-             */
             action.setContent("The response' status code was incorrect").queue();
             logger.warn("Unexpected status code: Expected: {} Actual: {}", HTTP_STATUS_CODE_OK,
                     response.statusCode());
@@ -171,8 +154,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         return HttpRequest.newBuilder(uri).GET().build();
     }
 
-    private @NotNull Optional<QueryResult> parseQuery(@NotNull HttpResponse<String> response,
-            @NotNull SlashCommandEvent event, @NotNull WebhookMessageUpdateAction<Message> action) {
+    private @NotNull Optional<QueryResult> parseQuery(@NotNull HttpResponse<String> response, @NotNull WebhookMessageUpdateAction<Message> action) {
         QueryResult result;
         try {
             Files.writeString(Path
@@ -181,295 +163,50 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             result = XML.readValue(response.body(), QueryResult.class);
 
         } catch (IOException e) {
-            /*
-             * event.getHook() .setEphemeral(true)
-             * .editOriginal("Unexpected response from WolframAlpha API") .queue();
-             */
             action.setContent("Unexpected response from WolframAlpha API").queue();
             logger.error("Unable to deserialize the class ", e);
             return Optional.empty();
         }
-
-        /*
-         * if (!result.isSuccess()) {
-         *//*
-            * event.getHook() .setEphemeral(true)
-            * .editOriginal("Could not successfully receive the result") .queue();
-            *//*
-               * action.setContent("Could not successfully receive the result").queue(); // TODO The
-               * exact error details have a different POJO structure, // POJOs have to be added to
-               * get those details. See the Wolfram doc. return Optional.empty(); }
-               */
         return Optional.of(result);
     }
-
-    @Deprecated
-    private @NotNull Optional<List<MessageAction>> createImages(SlashCommandEvent event,
-            QueryResult result) {
-        MessageChannel channel = event.getChannel();
-        List<MessageAction> messages = new ArrayList<>();
-        // For each probably much more readable.
-        try {
-            result.getPods()
-                .forEach(pod -> pod.getSubPods().stream().map(SubPod::getImage).forEach(image -> {
-                    try {
-                        String name = image.getTitle();
-                        String source = image.getSource();
-                        String extension = ".png";
-                        if (name.isEmpty())
-                            name = pod.getTitle();
-                        name += extension;
-                        BufferedImage img = ImageIO.read(new URL(source));
-                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                        ImageIO.write(img, "png", stream);
-                        messages.add(channel.sendFile(stream.toByteArray(), name));
-                    } catch (IOException e) {
-                        event.getHook()
-                            .setEphemeral(true)
-                            .editOriginal(
-                                    "Unable to generate message based on the WolframAlpha response")
-
-                            .queue();
-                        logger.error("Failed to read image {} from the WolframAlpha response",
-                                image, e);
-                        throw new Error();
-                    }
-                }));
-        } catch (Error e) {
-            return Optional.empty();
-        }
-        return Optional.of(messages);
-    }
-
-    private @NotNull Optional<List<MessageAction>> createResult(@NotNull QueryResult result,
-            @NotNull SlashCommandEvent event) {
-
-        MessageChannel channel = event.getChannel();
-        /* WebhookMessageUpdateAction<Message> action = */
-        event.getHook().editOriginal("Computed in " + result.getTiming()).queue();
-        int filesAttached = 0;
-        int resultHeight = 0;
-        int maxWidth = Integer.MIN_VALUE;
-        MessageAction message = null;
-        EmbedBuilder embedBuilder = new EmbedBuilder();
-        List<MessageEmbed> embeds = new ArrayList<>();
-        List<BufferedImage> images = new ArrayList<>();
-        List<byte[]> bytes = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-        List<Pod> pods = new ArrayList<>(result.getPods());
-        List<MessageAction> messages = new ArrayList<>();
-        logger.info("There are {} pods", pods.size());
-        int imageNo = 0;
-        OUTER: for (int i = 0; i < pods.size();) {
-            Pod pod = pods.get(i);
-            List<SubPod> subPods = new ArrayList<>(pod.getSubPods());
-            logger.info("pod number {}", ++i);
-            logger.info("There are {} sub pods within this pod", subPods.size());
-            for (int j = 0; j < subPods.size();) {
-
-                SubPod subPod = subPods.get(j);
-                logger.info("sub pod number {}", ++j);
-                WolframAlphaImage image = subPod.getImage();
-                try {
-                    String name = image.getTitle();
-                    String source = image.getSource();
-                    String extension = ".png";
-                    String header = pod.getTitle();
-                    boolean jIs1 = j == 1;
-                    int width =
-                            (jIs1 ? Math.max(getWidth(header), image.getWidth()) : image.getWidth())
-                                    + 10;
-                    int height = image.getHeight();
-                    if (j == 1)
-                        height += TEXT_HEIGHT;
-                    BufferedImage readImage =
-                            new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
-                    Graphics graphics = readImage.getGraphics();
-                    if (jIs1) {
-                        graphics.setFont(WOLFRAM_ALPHA_FONT);
-                        graphics.setColor(Color.WHITE);
-                        graphics.setColor(WOLFRAM_ALPHA_TEXT_COLOR);
-                        graphics.drawString(header, 10, 15);
-                    }
-                    var srcImg = ImageIO.read(new URL(source));
-                    graphics.drawImage(srcImg, 10, jIs1 ? 20 : 0, null);
-
-                    ImageIO.write(readImage, "png", Path
-                        .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\img%d.png"
-                            .formatted(++imageNo))
-                        .toFile());
-                    ImageIO.write(srcImg, "png", Path
-                        .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\ogImg%d.png"
-                            .formatted(imageNo))
-                        .toFile());
-
-                    if (name.isEmpty()) {
-                        name = header;
-                    }
-                    name += extension;
-                    maxWidth = Math.max(maxWidth, width);
-                    // FIXME get the attachments <= 10 or return a collection
-                    if (filesAttached == 10) {
-                        break OUTER;
-                    }
-
-
-                    if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
-                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
-                                maxWidth, resultHeight);
-                        images.clear();
-                        ImageIO.write(combinedImage, "png", Path
-                            .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-                                .formatted(++filesAttached))
-                            .toFile());
-                        if (message == null) {
-                            message = channel.sendFile(
-                                    WolframAlphaCommandUtils.imageToBytes(combinedImage),
-                                    "result%d.png".formatted(++filesAttached));
-                        } else {
-                            message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
-                                    "result%d.png".formatted(++filesAttached));
-                        }
-                        /*
-                         * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
-                         * ), name));
-                         */
-                        /*
-                         * bytes.add(WolfCommandUtils.imageToBytes(combinedImage));
-                         *
-                         */
-                        // filesAttached++;
-                        // names.add(name);
-                        resultHeight = 0;
-                        maxWidth = Integer.MIN_VALUE;
-                        embeds.add(embedBuilder
-                            .setImage("attachment://result%d.png".formatted(filesAttached))
-                            .build());
-                    } else if (pod == pods.get(pods.size() - 1)
-                            && subPod == subPods.get(subPods.size() - 1)) {
-                        logger.info("The last image");
-                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
-                                Math.max(maxWidth, image.getWidth()),
-                                resultHeight + image.getHeight());
-                        images.clear();
-                        ImageIO.write(combinedImage, "png", Path
-                            .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-                                .formatted(++filesAttached))
-                            .toFile());
-                        if (message == null) {
-                            message = channel.sendFile(
-                                    WolframAlphaCommandUtils.imageToBytes(combinedImage),
-                                    "result%d.png".formatted(++filesAttached));
-                        } else {
-                            message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
-                                    "result%d.png".formatted(++filesAttached));
-                        }
-                        /*
-                         * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
-                         * ), name));
-                         */
-                        /*
-                         * bytes.add(WolfCommandUtils.imageToBytes(combinedImage));//
-                         * filesAttached++;
-                         */
-                        embeds.add(embedBuilder
-                            .setImage("attachment://result%d.png".formatted(filesAttached))
-                            .build());
-                    }
-                    resultHeight += readImage.getHeight();
-                    images.add(readImage);
-                    logger.info(
-                            "Max Width {} Result Height {} Current Width {} Current Height {} Images {}",
-                            maxWidth, resultHeight, readImage.getWidth(), readImage.getHeight(),
-                            filesAttached);
-                } catch (IOException e) {
-                    event.reply("Unable to generate message based on the WolframAlpha response")
-                        .setEphemeral(true)
-                        .queue();
-                    logger.error("Failed to read image {} from the WolframAlpha response", image,
-                            e);
-                    return Optional.empty();
-                }
-            }
-            logger.info("Exiting pod number {}", i);
-        }
-        /*
-         * for (int i = bytes.size() - 1; i >= 0; i--) { try { ImageIO.write(ImageIO.read(new
-         * ByteArrayInputStream(bytes.get(i))), "png", Path .of(
-         * "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-         * .formatted(i)) .toFile()); } catch (IOException e) { e.printStackTrace(); } action =
-         * action.addFile(bytes.get(i), names.get(i)); }
-         */
-        messages.add(message.setEmbeds(embeds));
-        return Optional.of(messages);
-    }
-
-    private @NotNull String createResult$1(@NotNull QueryResult result,
-            @NotNull SlashCommandEvent event, WebhookMessageUpdateAction<Message> action,
+    private @NotNull String handleSuccessfulResult(@NotNull QueryResult result, WebhookMessageUpdateAction<Message> action,
             MessageEmbed embed) {
 
         int filesAttached = 0;
         int resultHeight = 0;
-        int maxWidth = Integer.MIN_VALUE;
-        boolean podsTimedOut = result.getNumberOfTimedOutPods() != 0;
         EmbedBuilder embedBuilder = new EmbedBuilder();
         List<MessageEmbed> embeds = new ArrayList<>(List.of(embed));
         List<BufferedImage> images = new ArrayList<>();
-        List<byte[]> bytes = new ArrayList<>();
-        List<String> names = new ArrayList<>();
-        List<Pod> pods = new ArrayList<>(result.getPods());
-        logger.info("There are {} pods", pods.size());
-        int imageNo = 0;
-        OUTER: for (int i = 0; i < pods.size();) {
-            Pod pod = pods.get(i);
-            List<SubPod> subPods = new ArrayList<>(pod.getSubPods());
-            logger.info("pod number {}", ++i);
-            logger.info("There are {} sub pods within this pod", subPods.size());
-            for (int j = 0; j < subPods.size();) {
-
-                SubPod subPod = subPods.get(j);
-                logger.info("sub pod number {}", ++j);
+        List<Pod> pods = result.getPods();
+        for (Pod pod : pods) {
+            List<SubPod> subPods = pod.getSubPods();
+            for (SubPod subPod : subPods) {
                 WolframAlphaImage image = subPod.getImage();
                 try {
-                    String name = image.getTitle();
+
                     String source = image.getSource();
-                    String extension = ".png";
                     String header = pod.getTitle();
-                    boolean jIs1 = j == 1;
+                    boolean firstSubPod = subPod == subPods.get(0);
                     int width =
-                            (jIs1 ? Math.max(getWidth(header), image.getWidth()) : image.getWidth())
+                            (firstSubPod ? Math.max(getWidth(header), image.getWidth()) : image.getWidth())
                                     + 10;
                     int height = image.getHeight();
-                    if (j == 1)
+                    if (firstSubPod)
                         height += TEXT_HEIGHT;
                     BufferedImage readImage =
                             new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
                     Graphics graphics = readImage.getGraphics();
-                    if (jIs1) {
+                    if (firstSubPod) {
                         graphics.setFont(WOLFRAM_ALPHA_FONT);
                         graphics.setColor(Color.WHITE);
                         graphics.setColor(WOLFRAM_ALPHA_TEXT_COLOR);
                         graphics.drawString(header, 10, 15);
                     }
-                    var srcImg = ImageIO.read(new URL(source));
-                    graphics.drawImage(srcImg, 10, jIs1 ? 20 : 0, null);
+                    BufferedImage srcImg = ImageIO.read(new URL(source));
+                    //TODO use named constants
+                    graphics.drawImage(srcImg, 10, firstSubPod ? 20 : 0, null);
 
-                    ImageIO.write(readImage, "png", Path
-                        .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\img%d.png"
-                            .formatted(++imageNo))
-                        .toFile());
-                    ImageIO.write(srcImg, "png", Path
-                        .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\ogImg%d.png"
-                            .formatted(imageNo))
-                        .toFile());
-
-                    if (name.isEmpty()) {
-                        name = header;
-                    }
-                    name += extension;
-                    maxWidth = Math.max(maxWidth, width);
-                    // FIXME get the attachments <= 10 or return a collection
-                    if (filesAttached == 10) {
+                    if (filesAttached == MAX_EMBEDS) {
                         action.setEmbeds(embeds);
                         return "Too many images. Visit the URI";
                     }
@@ -477,7 +214,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
                         BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
-                                maxWidth, resultHeight);
+                                resultHeight);
                         images.clear();
                         ImageIO.write(combinedImage, "png", Path
                             .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
@@ -486,74 +223,31 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                         action = action.addFile(
                                 WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
-                        /*
-                         * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
-                         * ), name));
-                         */
-                        /*
-                         * bytes.add(WolfCommandUtils.imageToBytes(combinedImage));
-                         *
-                         */
-                        // filesAttached++;
-                        // names.add(name);
                         resultHeight = 0;
-                        maxWidth = Integer.MIN_VALUE;
                         embeds.add(embedBuilder
                             .setImage("attachment://result%d.png".formatted(filesAttached))
                             .build());
                     } else if (pod == pods.get(pods.size() - 1)
                             && subPod == subPods.get(subPods.size() - 1) && images.size() != 0) {
                         logger.info("The last image");
-                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
-                                Math.max(maxWidth, image.getWidth()),
-                                resultHeight + image.getHeight());
                         images.clear();
-                        ImageIO.write(combinedImage, "png", Path
-                            .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-                                .formatted(++filesAttached))
-                            .toFile());
-
                         action = action.addFile(
-                                WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                                WolframAlphaCommandUtils.imageToBytes(WolframAlphaCommandUtils.combineImages(images,
+                                        resultHeight + image.getHeight())),
                                 "result%d.png".formatted(++filesAttached));
-
-                        /*
-                         * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
-                         * ), name));
-                         */
-                        /*
-                         * bytes.add(WolfCommandUtils.imageToBytes(combinedImage));//
-                         * filesAttached++;
-                         */
                         embeds.add(embedBuilder
                             .setImage("attachment://result%d.png".formatted(filesAttached))
                             .build());
                     }
                     resultHeight += readImage.getHeight();
                     images.add(readImage);
-                    logger.info(
-                            "Max Width {} Result Height {} Current Width {} Current Height {} Images {}",
-                            maxWidth, resultHeight, readImage.getWidth(), readImage.getHeight(),
-                            filesAttached);
                 } catch (IOException e) {
-                    /*
-                     * event.reply("Unable to generate message based on the WolframAlpha response")
-                     * .setEphemeral(true) .queue();
-                     */
                     logger.error("Failed to read image {} from the WolframAlpha response", image,
                             e);
                     return "Unable to generate message based on the WolframAlpha response";
                 }
             }
-            logger.info("Exiting pod number {}", i);
         }
-        /*
-         * for (int i = bytes.size() - 1; i >= 0; i--) { try { ImageIO.write(ImageIO.read(new
-         * ByteArrayInputStream(bytes.get(i))), "png", Path .of(
-         * "C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-         * .formatted(i)) .toFile()); } catch (IOException e) { e.printStackTrace(); } action =
-         * action.addFile(bytes.get(i), names.get(i)); }
-         */
         action.setEmbeds(embeds);
         return "";
     }
