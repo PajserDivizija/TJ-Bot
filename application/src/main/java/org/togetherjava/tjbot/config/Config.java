@@ -46,7 +46,7 @@ public final class Config {
             @JsonProperty("mutedRolePattern") String mutedRolePattern,
             @JsonProperty("heavyModerationRolePattern") String heavyModerationRolePattern,
             @JsonProperty("softModerationRolePattern") String softModerationRolePattern,
-            @JsonProperty("tagManageRolePattern") String tagManageRolePattern),
+            @JsonProperty("tagManageRolePattern") String tagManageRolePattern)),
             @JsonProperty("freeCommand") List<FreeCommandConfig> freeCommand),
             @JsonProperty("wolframAlphaAppId") String wolframAlphaAppId) {
         this.token = token;
@@ -182,9 +182,10 @@ public final class Config {
         return freeCommand; // already unmodifiable
     }
      * Gets the application ID used to connect to the WolframAlpha API.
-     *
+     * 
      * @return the application ID for the WolframAlpha API
      */
+
     public String getWolframAlphaAppId() {
         return wolframAlphaAppId;
     }

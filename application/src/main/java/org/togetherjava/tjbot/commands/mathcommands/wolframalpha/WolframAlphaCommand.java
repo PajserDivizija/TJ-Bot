@@ -315,15 +315,16 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
-                        BufferedImage combinedImage =
-                                WolframAlphaCommandUtils.combineImages(images, maxWidth, resultHeight);
+                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
+                                maxWidth, resultHeight);
                         images.clear();
                         ImageIO.write(combinedImage, "png", Path
                             .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
                                 .formatted(++filesAttached))
                             .toFile());
                         if (message == null) {
-                            message = channel.sendFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                            message = channel.sendFile(
+                                    WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         } else {
                             message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
@@ -356,7 +357,8 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                                 .formatted(++filesAttached))
                             .toFile());
                         if (message == null) {
-                            message = channel.sendFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                            message = channel.sendFile(
+                                    WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                     "result%d.png".formatted(++filesAttached));
                         } else {
                             message.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
@@ -474,14 +476,15 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
 
                     if (resultHeight + image.getHeight() > MAX_IMAGE_HEIGHT_PX) {
-                        BufferedImage combinedImage =
-                                WolframAlphaCommandUtils.combineImages(images, maxWidth, resultHeight);
+                        BufferedImage combinedImage = WolframAlphaCommandUtils.combineImages(images,
+                                maxWidth, resultHeight);
                         images.clear();
                         ImageIO.write(combinedImage, "png", Path
                             .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
                                 .formatted(++filesAttached))
                             .toFile());
-                        action = action.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                        action = action.addFile(
+                                WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
                         /*
                          * messages.add(channel.sendFile(WolfCommandUtils.imageToBytes(combinedImage
@@ -510,7 +513,8 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
                                 .formatted(++filesAttached))
                             .toFile());
 
-                        action = action.addFile(WolframAlphaCommandUtils.imageToBytes(combinedImage),
+                        action = action.addFile(
+                                WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
 
                         /*

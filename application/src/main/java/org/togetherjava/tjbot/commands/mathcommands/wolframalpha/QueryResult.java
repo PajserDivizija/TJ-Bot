@@ -3,6 +3,7 @@ package org.togetherjava.tjbot.commands.mathcommands.wolframalpha;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ final class QueryResult {
     @JsonProperty("relatedexamples")
     private RelatedExamples relatedExamples;
     @JsonProperty("pod")
+    @JacksonXmlElementWrapper(useWrapping = false)
     private List<Pod> pods;
     @JsonProperty("error")
     private Error errorTag;
