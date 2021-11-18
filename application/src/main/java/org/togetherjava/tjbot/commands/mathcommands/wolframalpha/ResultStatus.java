@@ -1,7 +1,9 @@
 package org.togetherjava.tjbot.commands.mathcommands.wolframalpha;
 
 public enum ResultStatus {
-    SUCCESS, NOT_SUCCESS, ERROR;
+    SUCCESS,
+    NOT_SUCCESS,
+    ERROR;
 
     static ResultStatus getResultStatus(QueryResult result) {
         if (result.isSuccess()) {
