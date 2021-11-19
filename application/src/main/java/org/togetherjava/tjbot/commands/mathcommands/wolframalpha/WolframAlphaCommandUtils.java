@@ -113,7 +113,7 @@ enum WolframAlphaCommandUtils {
     static String handleError(QueryResult result) {
         WolframAlphaCommand.logger.debug("The handleError method is being executed");
         WolframAlphaCommand.logger.error(
-                "Error getting response from Wolfram Alpha API \nError Code {}\n ErrorMessage{}",
+                "Error getting response from Wolfram Alpha API: Error Code: {} Error Message: {}",
                 result.getErrorTag().getCode(), result.getErrorTag().getMessage());
         return "An error occurred while getting response from the Wolfram|Alpha API. Check the URI";
     }

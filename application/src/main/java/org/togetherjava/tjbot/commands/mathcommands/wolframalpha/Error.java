@@ -7,25 +7,25 @@ import com.fasterxml.jackson.annotation.JsonRootName;
 @JsonRootName("error")
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class Error {
-    private ErrorCode code;
+    private int code;
     @JsonProperty("msg")
-    private ErrorMessage message;
+    private String message;
 
-    public ErrorCode getCode() {
+    public int getCode() {
         return code;
     }
 
     @SuppressWarnings("unused")
-    public void setCode(ErrorCode code) {
+    public void setCode(int code) {
         this.code = code;
     }
 
-    public ErrorMessage getMessage() {
+    public String getMessage() {
         return message;
     }
 
     @SuppressWarnings("unused")
-    public void setMessage(ErrorMessage message) {
+    public void setMessage(String message) {
         this.message = message;
     }
 
