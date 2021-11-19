@@ -1,22 +1,24 @@
 package org.togetherjava.tjbot.commands.mathcommands.wolframalpha;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonRootName;
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @JsonRootName("queryresult")
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class QueryResult {
+    private static final XmlMapper XML = new XmlMapper();
+
     @JacksonXmlProperty(isAttribute = true)
     private boolean success;
-    @JacksonXmlProperty(isAttribute = true)
-    private boolean error;
+    @JsonIgnore
+    private boolean errorAttribute;
     @JacksonXmlProperty(isAttribute = true, localName = "numpods")
     private int numberOfPods;
     @JacksonXmlProperty(isAttribute = true)
@@ -48,7 +50,7 @@ final class QueryResult {
     @JsonProperty("pod")
     @JacksonXmlElementWrapper(useWrapping = false)
     private List<Pod> pods;
-    @JsonProperty("error")
+    @JsonIgnore
     private Error errorTag;
 
     public boolean isSuccess() {
@@ -61,11 +63,7 @@ final class QueryResult {
     }
 
     public boolean isError() {
-        return error;
-    }
-
-    public void setError(boolean error) {
-        this.error = error;
+        return errorAttribute;
     }
 
     @SuppressWarnings("unused")
@@ -223,8 +221,25 @@ final class QueryResult {
         return errorTag;
     }
 
-    @SuppressWarnings("unused")
-    public void setErrorTag(Error errorTag) {
-        this.errorTag = errorTag;
+    @JsonAnySetter
+    @SuppressWarnings("ChainOfInstanceofChecks")
+    public void setError(String name, Object value) {
+        if (!"error".equals(name)) {
+            return;
+        }
+
+        // NOTE Unfortunately the WA API returns "error" as attribute and tag at the same time.
+        // There is no elegant fix to differentiate them other than doing it manually,
+        // see https://github.com/FasterXML/jackson-dataformat-xml/issues/65
+        // and https://github.com/FasterXML/jackson-dataformat-xml/issues/383
+        if (value instanceof String) {
+            errorAttribute = XML.convertValue(value, boolean.class);
+            return;
+        }
+        if (value instanceof Map) {
+            errorTag = XML.convertValue(value, Error.class);
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported error format");
     }
 }
