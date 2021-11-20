@@ -78,10 +78,8 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
 
         String query = Objects.requireNonNull(event.getOption(QUERY_OPTION)).getAsString();
 
-        URI userUri = UrlBuilder.fromString(USER_ENDPOINT).addParameter("i", query).toUri();
-
-        MessageEmbed uriEmbed = new EmbedBuilder()
-            .setTitle(query + "- Wolfram|Alpha", userUri.toString())
+        MessageEmbed uriEmbed = new EmbedBuilder().setTitle(query + "- Wolfram|Alpha",
+                UrlBuilder.fromString(USER_ENDPOINT).addParameter("i", query).toUri().toString())
             .setDescription(
                     "Wolfram|Alpha brings expert-level knowledge and capabilities to the broadest possible range of people-spanning all professions and education levels.")
             .build();
@@ -89,12 +87,15 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         WebhookMessageUpdateAction<Message> action =
                 event.getHook().editOriginal("").setEmbeds(uriEmbed);
 
-        URI apiUri = UrlBuilder.fromString(API_ENDPOINT)
-            .addParameter("appid", Config.getInstance().getWolframAlphaAppId())
-            .addParameter("format", "image,plaintext")
-            .addParameter("input", query)
-            .toUri();
-        HttpRequest request = sendQuery(apiUri);
+        HttpRequest request = HttpRequest
+            .newBuilder(UrlBuilder.fromString(API_ENDPOINT)
+                .addParameter("appid", Config.getInstance().getWolframAlphaAppId())
+                .addParameter("format", "image,plaintext")
+                .addParameter("input", query)
+                .toUri())
+            .GET()
+            .build();
+
         Optional<HttpResponse<String>> optResponse = getResponse(request, action);
         if (optResponse.isEmpty())
             return;
@@ -143,9 +144,4 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
         return Optional.of(response);
     }
 
-    // TODO merge this part with creating the URI and put it in the utility enum
-    private @NotNull HttpRequest sendQuery(@NotNull URI uri) {
-        logger.info("The query URI is {}", uri);
-        return HttpRequest.newBuilder(uri).GET().build();
-    }
 }
