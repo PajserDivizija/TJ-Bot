@@ -34,23 +34,13 @@ enum WolframAlphaCommandUtils {
         int width =
                 images.stream().mapToInt(BufferedImage::getWidth).max().orElse(Integer.MAX_VALUE);
         // height = images.stream().mapToInt(BufferedImage::getHeight).sum();
-        WolframAlphaCommand.logger.info("In Method: Width {} Height {}", width, height);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
         Graphics imgGraphics = image.getGraphics();
         imgGraphics.setColor(Color.WHITE);
         imgGraphics.fillRect(0, 0, width, height);
         int resultHeight = 0;
-        int writtenImage = 0;
         for (BufferedImage img : images) {
             imgGraphics.drawImage(img, 0, resultHeight, null);
-            try {
-                ImageIO.write(image, "png", Path
-                    .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\utils\\combinedImage%d.png"
-                        .formatted(++writtenImage))
-                    .toFile());
-            } catch (IOException e) {
-                WolframAlphaCommand.logger.error("e");
-            }
             resultHeight += img.getHeight(null);
         }
         return image;
@@ -182,10 +172,6 @@ enum WolframAlphaCommandUtils {
                         BufferedImage combinedImage =
                                 WolframAlphaCommandUtils.combineImages(images, resultHeight);
                         images.clear();
-                        ImageIO.write(combinedImage, "png", Path
-                            .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\sentImage%d.png"
-                                .formatted(++filesAttached))
-                            .toFile());
                         action = action.addFile(
                                 WolframAlphaCommandUtils.imageToBytes(combinedImage),
                                 "result%d.png".formatted(++filesAttached));
@@ -195,12 +181,11 @@ enum WolframAlphaCommandUtils {
                             .build());
                     } else if (pod == pods.get(pods.size() - 1)
                             && subPod == subPods.get(subPods.size() - 1) && images.size() != 0) {
-                        WolframAlphaCommand.logger.info("The last image");
-                        images.clear();
                         action = action.addFile(
                                 WolframAlphaCommandUtils.imageToBytes(WolframAlphaCommandUtils
                                     .combineImages(images, resultHeight + image.getHeight())),
                                 "result%d.png".formatted(++filesAttached));
+                        images.clear();
                         embeds.add(embedBuilder
                             .setImage("attachment://result%d.png".formatted(filesAttached))
                             .build());
