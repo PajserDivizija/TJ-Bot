@@ -18,7 +18,6 @@ import org.togetherjava.tjbot.config.Config;
 import java.awt.*;
 import java.awt.font.TextAttribute;
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
