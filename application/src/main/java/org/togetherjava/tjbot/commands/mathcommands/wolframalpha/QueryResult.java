@@ -116,10 +116,6 @@ final class QueryResult {
         this.timedOutPods = timedOutPods;
     }
 
-    public int getNumberOfTimedOutPods() {
-        return timedOutPods.isEmpty() ? 0 : timedOutPods.split(",").length;
-    }
-
     @SuppressWarnings("unused")
     public double getParseTiming() {
         return parseTiming;

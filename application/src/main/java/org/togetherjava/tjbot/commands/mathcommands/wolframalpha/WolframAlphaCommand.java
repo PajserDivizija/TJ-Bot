@@ -111,7 +111,7 @@ public final class WolframAlphaCommand extends SlashCommandAdapter {
             case NOT_SUCCESS -> WolframAlphaCommandUtils.handleMisunderstoodQuery(result);
 
             case SUCCESS -> "Computed in:" + result.getTiming() + "\n"
-                    + (result.getNumberOfTimedOutPods() == 0 ? ""
+                    + (result.getTimedOutPods().isEmpty() ? ""
                             : "Some pods have timed out. Visit the URI")
                     + "\n"
                     + WolframAlphaCommandUtils.handleSuccessfulResult(result, action, uriEmbed);
