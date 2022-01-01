@@ -161,6 +161,7 @@ enum WolframAlphaCommandUtils {
                     graphics.drawImage(srcImg, 10, firstSubPod ? 20 : 0, null);
 
                     if (filesAttached == WolframAlphaCommand.MAX_EMBEDS) {
+                        //noinspection ResultOfMethodCallIgnored
                         action.setEmbeds(embeds);
                         return "Too many images. Visit the URI";
                     }
@@ -198,6 +199,7 @@ enum WolframAlphaCommandUtils {
                 }
             }
         }
+        //noinspection ResultOfMethodCallIgnored
         action.setEmbeds(embeds);
         return "";
     }
