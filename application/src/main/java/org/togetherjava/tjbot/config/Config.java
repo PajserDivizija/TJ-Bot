@@ -17,11 +17,9 @@ import java.util.Objects;
  * <p>
  * Create instances using {@link #load(Path)} and then access them with {@link #getInstance()}.
  */
-@SuppressWarnings({"Singleton", "ClassCanBeRecord"})
-public final class Config {
+@SuppressWarnings({"Singleton", "ClassCanBeRecord"}) public final class Config {
 
-    @SuppressWarnings("RedundantFieldInitialization")
-    private static Config config = null;
+    @SuppressWarnings("RedundantFieldInitialization") private static Config config = null;
 
     private final String token;
     private final String databasePath;
@@ -46,8 +44,8 @@ public final class Config {
             @JsonProperty("mutedRolePattern") String mutedRolePattern,
             @JsonProperty("heavyModerationRolePattern") String heavyModerationRolePattern,
             @JsonProperty("softModerationRolePattern") String softModerationRolePattern,
-            @JsonProperty("tagManageRolePattern") String tagManageRolePattern)),
-            @JsonProperty("freeCommand") List<FreeCommandConfig> freeCommand),
+            @JsonProperty("tagManageRolePattern") String tagManageRolePattern,
+            @JsonProperty("freeCommand") List<FreeCommandConfig> freeCommand,
             @JsonProperty("wolframAlphaAppId") String wolframAlphaAppId) {
         this.token = token;
         this.databasePath = databasePath;
@@ -176,13 +174,14 @@ public final class Config {
      * {@link FreeCommandConfig}
      *
      * @return a List of instances of FreeCommandConfig, each of the instances are separated by
-     *         guild.
+     * guild.
      */
     public @NotNull Collection<FreeCommandConfig> getFreeCommandConfig() {
         return freeCommand; // already unmodifiable
     }
+
+    /**
      * Gets the application ID used to connect to the WolframAlpha API.
-     * 
      * @return the application ID for the WolframAlpha API
      */
 
