@@ -40,8 +40,8 @@ enum WolframAlphaCommandUtils {
         imgGraphics.fillRect(0, 0, width, height);
         int resultHeight = 0;
         for (BufferedImage img : images) {
-            imgGraphics.drawImage(img, 0, resultHeight, null);
-            resultHeight += img.getHeight(null);
+            imgGraphics.drawImage(img, 0, resultHeight, Constants.IMAGE_OBSERVER);
+            resultHeight += img.getHeight(Constants.IMAGE_OBSERVER);
         }
         return image;
     }
@@ -59,7 +59,7 @@ enum WolframAlphaCommandUtils {
     static int getWidth(String header) {
         BufferedImage image = new BufferedImage(100, 100, 6);
         Graphics g = image.getGraphics();
-        g.setFont(WolframAlphaCommand.WOLFRAM_ALPHA_FONT);
+        g.setFont(Constants.WOLFRAM_ALPHA_FONT);
         return g.getFontMetrics().stringWidth(header);
     }
 
@@ -96,12 +96,12 @@ enum WolframAlphaCommandUtils {
                 .map(RelatedExample::getCategoryThumb)
                 .collect(Collectors.joining("\n")));
         }
-        WolframAlphaCommand.logger.info("Error Message \n {}", String.join("\n", output));
+        Constants.logger.info("Error Message \n {}", String.join("\n", output));
         return String.join("\n", output);
     }
 
     static String handleError(QueryResult result) {
-        WolframAlphaCommand.logger.error(
+        Constants.logger.error(
                 "Error getting response from Wolfram Alpha API: Error Code: {} Error Message: {}",
                 result.getErrorTag().getCode(), result.getErrorTag().getMessage());
         return "An error occurred while getting response from the Wolfram|Alpha API. Check the URI";
@@ -114,11 +114,11 @@ enum WolframAlphaCommandUtils {
             Files.writeString(Path
                 .of("C:\\Users\\Abc\\IdeaProjects\\TJ-Bot-baseRepo\\application\\src\\main\\java\\org\\togetherjava\\tjbot\\commands\\mathcommands\\wolframalpha\\responsebody.xml"),
                     response.body());
-            result = WolframAlphaCommand.XML.readValue(response.body(), QueryResult.class);
+            result = Constants.XML.readValue(response.body(), QueryResult.class);
 
         } catch (IOException e) {
             action.setContent("Unexpected response from WolframAlpha API").queue();
-            WolframAlphaCommand.logger.error("Unable to deserialize the class ", e);
+            Constants.logger.error("Unable to deserialize the class ", e);
             return Optional.empty();
         }
         return Optional.of(result);
@@ -146,29 +146,29 @@ enum WolframAlphaCommandUtils {
                             : image.getWidth()) + 10;
                     int height = image.getHeight();
                     if (firstSubPod)
-                        height += WolframAlphaCommand.TEXT_HEIGHT;
+                        height += Constants.TEXT_HEIGHT;
                     BufferedImage readImage =
                             new BufferedImage(width, height, BufferedImage.TYPE_4BYTE_ABGR);
                     Graphics graphics = readImage.getGraphics();
                     if (firstSubPod) {
-                        graphics.setFont(WolframAlphaCommand.WOLFRAM_ALPHA_FONT);
+                        graphics.setFont(Constants.WOLFRAM_ALPHA_FONT);
                         graphics.setColor(Color.WHITE);
-                        graphics.setColor(WolframAlphaCommand.WOLFRAM_ALPHA_TEXT_COLOR);
-                        graphics.drawString(header, 10, 15);
+                        graphics.setColor(Constants.WOLFRAM_ALPHA_TEXT_COLOR);
+                        graphics.drawString(header, Constants.IMAGE_MARGIN_WIDTH, 15);
                     }
                     BufferedImage srcImg = ImageIO.read(new URL(source));
                     // TODO use named constants
-                    graphics.drawImage(srcImg, 10, firstSubPod ? 20 : 0, null);
+                    graphics.drawImage(srcImg, Constants.IMAGE_MARGIN_WIDTH, firstSubPod ? 20 : 0,
+                            Constants.IMAGE_OBSERVER);
 
-                    if (filesAttached == WolframAlphaCommand.MAX_EMBEDS) {
-                        //noinspection ResultOfMethodCallIgnored
+                    if (filesAttached == Constants.MAX_EMBEDS) {
+                        // noinspection ResultOfMethodCallIgnored
                         action.setEmbeds(embeds);
                         return "Too many images. Visit the URI";
                     }
 
 
-                    if (resultHeight
-                            + image.getHeight() > WolframAlphaCommand.MAX_IMAGE_HEIGHT_PX) {
+                    if (resultHeight + image.getHeight() > Constants.MAX_IMAGE_HEIGHT_PX) {
                         BufferedImage combinedImage =
                                 WolframAlphaCommandUtils.combineImages(images, resultHeight);
                         images.clear();
@@ -193,13 +193,13 @@ enum WolframAlphaCommandUtils {
                     resultHeight += readImage.getHeight();
                     images.add(readImage);
                 } catch (IOException e) {
-                    WolframAlphaCommand.logger
-                        .error("Failed to read image {} from the WolframAlpha response", image, e);
+                    Constants.logger.error("Failed to read image {} from the WolframAlpha response",
+                            image, e);
                     return "Unable to generate message based on the WolframAlpha response";
                 }
             }
         }
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         action.setEmbeds(embeds);
         return "";
     }
