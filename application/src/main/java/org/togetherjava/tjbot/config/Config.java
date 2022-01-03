@@ -17,9 +17,11 @@ import java.util.Objects;
  * <p>
  * Create instances using {@link #load(Path)} and then access them with {@link #getInstance()}.
  */
-@SuppressWarnings({"Singleton", "ClassCanBeRecord"}) public final class Config {
+@SuppressWarnings({"Singleton", "ClassCanBeRecord"})
+public final class Config {
 
-    @SuppressWarnings("RedundantFieldInitialization") private static Config config = null;
+    @SuppressWarnings("RedundantFieldInitialization")
+    private static Config config = null;
 
     private final String token;
     private final String databasePath;
@@ -174,7 +176,7 @@ import java.util.Objects;
      * {@link FreeCommandConfig}
      *
      * @return a List of instances of FreeCommandConfig, each of the instances are separated by
-     * guild.
+     *         guild.
      */
     public @NotNull Collection<FreeCommandConfig> getFreeCommandConfig() {
         return freeCommand; // already unmodifiable
@@ -182,6 +184,7 @@ import java.util.Objects;
 
     /**
      * Gets the application ID used to connect to the WolframAlpha API.
+     * 
      * @return the application ID for the WolframAlpha API
      */
 
