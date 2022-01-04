@@ -31,6 +31,11 @@ public enum Constants {
      * The width of the margins of the images generated
      */
     static final int IMAGE_MARGIN_WIDTH = 10;
+    /**
+     * The height of the margins of the images generated
+     */
+    public static final int IMAGE_MARGIN_HEIGHT = 15;
+
     static final XmlMapper XML = new XmlMapper();
     static final int MAX_IMAGE_HEIGHT_PX = 400;
     /**
@@ -45,7 +50,7 @@ public enum Constants {
     /**
      * Height of the unscaled text displayed in Font {@link #WOLFRAM_ALPHA_FONT}
      */
-    static final int TEXT_HEIGHT = 30;
+    static final int TEXT_HEIGHT = 20;
     static final int HTTP_STATUS_CODE_OK = 200;
     static final String QUERY_OPTION = "query";
     /**
