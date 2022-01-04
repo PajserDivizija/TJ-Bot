@@ -87,7 +87,7 @@ enum WolframAlphaCommandUtils {
             output.add(languageMsg.getEnglish() + "\n" + languageMsg.getOther());
         }
         DidYouMeans didYouMeans = result.getDidYouMeans();
-        if (didYouMeans != null) {
+        if (didYouMeans != null && didYouMeans.getCount() != 0) {
             output.add("Did you mean \n" + didYouMeans.getDidYouMeans()
                 .stream()
                 .map(DidYouMean::getMessage)
@@ -95,14 +95,13 @@ enum WolframAlphaCommandUtils {
                 .collect(Collectors.joining("\n")));
         }
         RelatedExamples relatedExamples = result.getRelatedExamples();
-        if (relatedExamples != null) {
+        if (relatedExamples != null && relatedExamples.getCount() != 0) {
             output.add("Here are some related examples \n" + relatedExamples.getRelatedExamples()
                 .stream()
                 .map(RelatedExample::getCategoryThumb)
                 .map(text -> "• " + text)
                 .collect(Collectors.joining("\n")));
         }
-        // Constants.logger.info("Error Message \n {}", String.join("\n", output));
         return String.join("\n", output);
     }
 
