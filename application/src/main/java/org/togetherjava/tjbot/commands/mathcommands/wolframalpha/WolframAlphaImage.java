@@ -53,4 +53,10 @@ final class WolframAlphaImage {
     public void setHeight(int height) {
         this.height = height;
     }
+
+    @Override
+    public String toString() {
+        return "WolframAlphaImage{" + "source='" + source + '\'' + ", width=" + width + ", height="
+                + height + ", title='" + title + '\'' + '}';
+    }
 }

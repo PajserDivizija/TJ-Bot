@@ -130,7 +130,8 @@ enum WolframAlphaCommandUtils {
         int filesAttached = 0;
         int resultHeight = 0;
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        List<MessageEmbed> embeds = new ArrayList<>(List.of(embed));
+        List<MessageEmbed> embeds = new ArrayList<>();
+        embeds.add(embed);
         List<BufferedImage> images = new ArrayList<>();
         List<Pod> pods = result.getPods();
         for (Pod pod : pods) {
@@ -143,7 +144,7 @@ enum WolframAlphaCommandUtils {
                     String header = pod.getTitle();
                     boolean firstSubPod = subPod == subPods.get(0);
                     int width = (firstSubPod ? Math.max(getWidth(header), image.getWidth())
-                            : image.getWidth()) + 10;
+                            : image.getWidth()) + Constants.IMAGE_MARGIN_WIDTH;
                     int height = image.getHeight();
                     if (firstSubPod)
                         height += Constants.TEXT_HEIGHT;
