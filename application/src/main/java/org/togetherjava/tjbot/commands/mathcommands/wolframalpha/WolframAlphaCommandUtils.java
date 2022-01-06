@@ -70,11 +70,15 @@ enum WolframAlphaCommandUtils {
             .add("The Wolfram|Alpha API was unable to produce a successful result. Visit the URI");
         Tips tips = result.getTips();
         if (tips != null && tips.getCount() != 0) {
-            output.add("Here are some tips \n" + tips.getTips()
-                .stream()
-                .map(Tip::getText)
-                .map(text -> "• " + text)
-                .collect(Collectors.joining("\n")));
+            if (tips.getCount() == 1) {
+                output.add("Here is a tip: " + tips.getTips().get(0));
+            } else {
+                output.add("Here are some tips: \n" + tips.getTips()
+                    .stream()
+                    .map(Tip::getText)
+                    .map(text -> "• " + text)
+                    .collect(Collectors.joining("\n")));
+            }
         }
         FutureTopic futureTopic = result.getFutureTopic();
         if (futureTopic != null) {
@@ -88,19 +92,29 @@ enum WolframAlphaCommandUtils {
         }
         DidYouMeans didYouMeans = result.getDidYouMeans();
         if (didYouMeans != null && didYouMeans.getCount() != 0) {
-            output.add("Did you mean \n" + didYouMeans.getDidYouMeans()
-                .stream()
-                .map(DidYouMean::getMessage)
-                .map(text -> "• " + text)
-                .collect(Collectors.joining("\n")));
+            if (didYouMeans.getCount() == 1)
+                output.add("Did you mean: " + didYouMeans.getDidYouMeans().get(0));
+            else {
+                output.add("Did you mean \n" + didYouMeans.getDidYouMeans()
+                    .stream()
+                    .map(DidYouMean::getMessage)
+                    .map(text -> "• " + text)
+                    .collect(Collectors.joining("\n")));
+            }
         }
         RelatedExamples relatedExamples = result.getRelatedExamples();
         if (relatedExamples != null && relatedExamples.getCount() != 0) {
-            output.add("Here are some related examples \n" + relatedExamples.getRelatedExamples()
-                .stream()
-                .map(RelatedExample::getCategoryThumb)
-                .map(text -> "• " + text)
-                .collect(Collectors.joining("\n")));
+            if (relatedExamples.getCount() == 1) {
+                output.add("Here is a related example: "
+                        + relatedExamples.getRelatedExamples().get(0));
+            } else {
+                output
+                    .add("Here are some related examples \n" + relatedExamples.getRelatedExamples()
+                        .stream()
+                        .map(RelatedExample::getCategoryThumb)
+                        .map(text -> "• " + text)
+                        .collect(Collectors.joining("\n")));
+            }
         }
         return String.join("\n", output);
     }
@@ -164,9 +178,8 @@ enum WolframAlphaCommandUtils {
                         graphics.drawString(header, Constants.IMAGE_MARGIN_WIDTH,
                                 Constants.IMAGE_MARGIN_HEIGHT);
                     }
-                    // TODO use named constants
                     graphics.drawImage(ImageIO.read(new URL(source)), Constants.IMAGE_MARGIN_WIDTH,
-                            firstSubPod ? 20 : 0, Constants.IMAGE_OBSERVER);
+                            firstSubPod ? Constants.TEXT_HEIGHT : 0, Constants.IMAGE_OBSERVER);
 
                     if (filesAttached == Constants.MAX_EMBEDS) {
                         // noinspection ResultOfMethodCallIgnored
