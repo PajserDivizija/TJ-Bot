@@ -71,7 +71,7 @@ enum WolframAlphaCommandUtils {
         Tips tips = result.getTips();
         if (tips != null && tips.getCount() != 0) {
             if (tips.getCount() == 1) {
-                output.add("Here is a tip: " + tips.getTips().get(0));
+                output.add("Here is a tip: " + tips.getTips().get(0).getText());
             } else {
                 output.add("Here are some tips: \n" + tips.getTips()
                     .stream()
@@ -93,7 +93,7 @@ enum WolframAlphaCommandUtils {
         DidYouMeans didYouMeans = result.getDidYouMeans();
         if (didYouMeans != null && didYouMeans.getCount() != 0) {
             if (didYouMeans.getCount() == 1)
-                output.add("Did you mean: " + didYouMeans.getDidYouMeans().get(0));
+                output.add("Did you mean: " + didYouMeans.getDidYouMeans().get(0).getMessage());
             else {
                 output.add("Did you mean \n" + didYouMeans.getDidYouMeans()
                     .stream()
@@ -106,7 +106,7 @@ enum WolframAlphaCommandUtils {
         if (relatedExamples != null && relatedExamples.getCount() != 0) {
             if (relatedExamples.getCount() == 1) {
                 output.add("Here is a related example: "
-                        + relatedExamples.getRelatedExamples().get(0));
+                        + relatedExamples.getRelatedExamples().get(0).getCategoryThumb());
             } else {
                 output
                     .add("Here are some related examples \n" + relatedExamples.getRelatedExamples()
